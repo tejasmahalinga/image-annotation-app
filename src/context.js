@@ -4,11 +4,15 @@ const ThemeContext = createContext({});
 
 export const ThemeContextProvider = ({ children }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [allImageBoxList, setAllImageBoxList] = useState([]);
+
   return (
     <ThemeContext.Provider
       value={{
         currentImageIndex,
         setCurrentImageIndex,
+        allImageBoxList,
+        setAllImageBoxList,
       }}
     >
       {children}

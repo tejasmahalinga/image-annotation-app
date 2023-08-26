@@ -11,8 +11,8 @@ function App() {
   const { currentImageIndex, setCurrentImageIndex } = useThemeContext();
 
   return (
-    <div className="flex justify-center items-center w-full h-screen flex-col p-20 bg-slate-800">
-      <div className="text-white font-semibold text-2xl">
+    <div className="flex justify-center items-center w-full h-screen flex-col p-20 bg-slate-800 gap-8">
+      <div className="text-white font-semibold text-3xl">
         Image Annotation Tool
       </div>
       <Toolbar />
