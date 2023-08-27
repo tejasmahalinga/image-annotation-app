@@ -1,17 +1,16 @@
-import { Close } from "@mui/icons-material";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Group,
-  Image,
-  Layer,
-  Rect,
-  Stage,
-  Transformer,
-  Text,
-} from "react-konva";
+import { Button } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Image, Layer, Rect, Stage, Transformer } from "react-konva";
 import useImage from "use-image";
+import imagesData from "../data/imagesData.json";
+import { useThemeContext } from "../context";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ImageAnnotationCanvas = ({ selectedImageData }) => {
+  const { currentImageIndex, allImageBoxList, setAllImageBoxList } =
+    useThemeContext();
+
   const [boundingBoxList, setBoundingBoxList] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [stageRef, setStageRef] = useState(null);
@@ -21,19 +20,8 @@ const ImageAnnotationCanvas = ({ selectedImageData }) => {
   console.log("selectedImageData", selectedImageData);
   //   const stageRef = useRef();
 
-  const canvasWidth = 800;
+  const canvasWidth = 850;
   const canvasHeight = 500;
-
-  const checkDeselect = (e) => {
-    // deselect when clicked on empty area
-    console.log("e.target.getStage()>>", e.target.getStage());
-    const clickedOnEmpty = e.target === e.target.getStage();
-    console.log("empty>>>", clickedOnEmpty);
-    if (clickedOnEmpty) {
-      setSelectedId(null);
-    }
-    return clickedOnEmpty;
-  };
 
   console.log("selectId>>", selectedId);
 
@@ -41,20 +29,12 @@ const ImageAnnotationCanvas = ({ selectedImageData }) => {
     let tempList = [...boundingBoxList].filter(
       (item) => !(item.id === selectedId)
     );
-    console.log("templISTT>>>>", tempList);
     setBoundingBoxList(tempList);
-
-    console.log("cancel>>>");
   };
 
   console.log("selected delete>>>>> global list", boundingBoxList);
 
   const handleMouseDown = (tempSelectedBox) => {
-    // const clickedOnEmpty = checkDeselect(e);
-    // if (clickedOnEmpty) {
-
-    //delete
-
     setIsDrawing(true);
     const stage = stageRef.getStage();
     console.log("getstage....", stage.getStage());
@@ -74,22 +54,14 @@ const ImageAnnotationCanvas = ({ selectedImageData }) => {
     console.log("selected delete>>>>>", pointerPos, tempSelectedBox);
     if (
       tempSelectedBox &&
-      pointerPos.x >= tempSelectedBox.x + tempSelectedBox.width + 10 &&
-      pointerPos.x <= tempSelectedBox.x + tempSelectedBox.width + 10 + 30 &&
-      pointerPos.y <= tempSelectedBox.y &&
-      pointerPos.y >= tempSelectedBox.y - 30
+      pointerPos.x >= tempSelectedBox.x + tempSelectedBox.width - 30 &&
+      pointerPos.x <= tempSelectedBox.x + tempSelectedBox.width &&
+      pointerPos.y >= tempSelectedBox.y &&
+      pointerPos.y <= tempSelectedBox.y + 30
     ) {
-      console.log(
-        "selected delete>>>>> conditions",
-        pointerPos.x >= tempSelectedBox.x + tempSelectedBox.width + 10,
-        pointerPos.x <= tempSelectedBox.x + tempSelectedBox.width + 10 + 30,
-        pointerPos.y <= tempSelectedBox.y,
-        pointerPos.y >= tempSelectedBox.y - 30
-      );
-
-      console.log("delete>>>");
       handleRemoveBox(tempSelectedBox.id);
       setSelectedBoxTemp(null);
+      console.log("delete success>>>>");
       return;
     }
 
@@ -111,6 +83,36 @@ const ImageAnnotationCanvas = ({ selectedImageData }) => {
 
     // }
   };
+
+  // set the bounding boxes if already saved for this image previously
+  useEffect(() => {
+    if (allImageBoxList[selectedImageData.id]) {
+      setBoundingBoxList(allImageBoxList[selectedImageData.id]);
+    } else {
+      setBoundingBoxList([]);
+    }
+  }, [selectedImageData.id]);
+
+  //save the bounding box changes
+  const handleSaveChanges = () => {
+    let tempData = { ...allImageBoxList };
+    tempData[selectedImageData.id] = boundingBoxList.filter(
+      (item) => !(item.width === 0 && item.height === 0)
+    );
+    setAllImageBoxList(tempData);
+    toast.success("Saved changes successfully", {
+      position: "bottom-left",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+    });
+  };
+
+  console.log("allData>>>", allImageBoxList);
 
   const handleMouseMove = () => {
     if (!isDrawing) {
@@ -223,8 +225,8 @@ const ImageAnnotationCanvas = ({ selectedImageData }) => {
         {isSelected && (
           <Image
             image={image2}
-            x={shapeProps.x + shapeProps.width + 10}
-            y={shapeProps.y - 30}
+            x={shapeProps.x + shapeProps.width - 30}
+            y={shapeProps.y}
             width={30}
             height={30}
             onMouseEnter={(e) => {
@@ -251,6 +253,25 @@ const ImageAnnotationCanvas = ({ selectedImageData }) => {
 
   return (
     <div>
+      <div className="flex justify-between mb-4">
+        <div className="text-lg text-white self-end">
+          Image id - {imagesData[currentImageIndex].id}
+        </div>
+        {boundingBoxList &&
+        boundingBoxList.filter(
+          (item) => !(item.width === 0 && item.height === 0)
+        ).length > 0 ? (
+          <div className="self-end">
+            <Button
+              variant="contained"
+              color="inherit"
+              onClick={handleSaveChanges}
+            >
+              Save Changes
+            </Button>
+          </div>
+        ) : null}
+      </div>
       <Stage
         width={canvasWidth}
         height={canvasHeight}
@@ -287,6 +308,7 @@ const ImageAnnotationCanvas = ({ selectedImageData }) => {
             ))}
         </Layer>
       </Stage>
+      <ToastContainer />
     </div>
   );
 };
